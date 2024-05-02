@@ -4,6 +4,9 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <omp.h>
+#include <random>
+
 namespace py = pybind11;
 
 class CellList {
@@ -139,30 +142,64 @@ public:
     }
 
     double get_average_density(int N, double rad,  double radius = 0.56123102415){
+        std::random_device r;
+        std::vector<std::default_random_engine> generators;
+        for (int i = 0, N = omp_get_max_threads(); i < N; ++i) {
+            generators.emplace_back(std::default_random_engine(r()));
+        }
+        std::uniform_real_distribution<float> distributionX(0.0, Lx);
+        std::uniform_real_distribution<float> distributionY(0.0, Ly);
+
+
         double average = 0;
+        #pragma omp parallel for
         for (int i = 0; i < N; i++){
-            double x_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * Lx;
-            double y_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * Ly;
+            std::default_random_engine& engine = generators[omp_get_thread_num()];
+            
+            double x_rand = distributionX(engine);
+            double y_rand = distributionY(engine);
             average += get_density(x_rand, y_rand, rad, radius);
         }
         return average/N;
     }
 
     std::vector<double> get_density_list(int N, double rad,  double radius = 0.56123102415){
+        std::random_device r;
+        std::vector<std::default_random_engine> generators;
+        for (int i = 0, N = omp_get_max_threads(); i < N; ++i) {
+            generators.emplace_back(std::default_random_engine(r()));
+        }
+        std::uniform_real_distribution<float> distributionX(0.0, Lx);
+        std::uniform_real_distribution<float> distributionY(0.0, Ly);
+
         std::vector<double> list(N);
+        #pragma omp parallel for
         for (int i = 0; i < N; i++){
-            double x_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * Lx;
-            double y_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * Ly;
+            std::default_random_engine& engine = generators[omp_get_thread_num()];
+            
+            double x_rand = distributionX(engine);
+            double y_rand = distributionY(engine);
             list[i] = get_density(x_rand, y_rand, rad, radius);
         }
         return list;
     }
 
     std::vector<double> get_linear_density_list(int N, double rad,  double radius = 0.56123102415){
+        std::random_device r;
+        std::vector<std::default_random_engine> generators;
+        for (int i = 0, N = omp_get_max_threads(); i < N; ++i) {
+            generators.emplace_back(std::default_random_engine(r()));
+        }
+        std::uniform_real_distribution<float> distributionX(0.0, Lx);
+        std::uniform_real_distribution<float> distributionY(0.0, Ly);
+
         std::vector<double> list(N);
+        #pragma omp parallel for
         for (int i = 0; i < N; i++){
-            double x_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * Lx;
-            double y_rand = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX) * Ly;
+            std::default_random_engine& engine = generators[omp_get_thread_num()];
+            
+            double x_rand = distributionX(engine);
+            double y_rand = distributionY(engine);
             list[i] = get_linear_density(x_rand, y_rand, rad, radius);
         }
         return list;

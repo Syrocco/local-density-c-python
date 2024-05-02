@@ -5,7 +5,7 @@
 CXX = g++
 
 # Flags
-CXXFLAGS = -O3 -Wall -shared -std=c++11 -fPIC
+CXXFLAGS = -O3 -fopenmp -Wall -shared -std=c++11 -fPIC
 
 # Pybind11 includes
 PYTHON_INCLUDES := $(shell python3 -m pybind11 --includes)

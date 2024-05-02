@@ -6,7 +6,7 @@ from diptest import dip
 import numpy as np
 
 
-data = Data("/hdd/Documents/mips/data/LAMMPS/third tests/N_15000phi_0.6vo_413.333333333333T_0m_0.471428571428571.dumpM")
+data = Data("/hdd/Documents/mips/data/LAMMPS/third tests/N_15000phi_0.6vo_600T_0m_0.457142857142857.dumpM")
 
 Lx_val = data.Lx
 Ly_val = data.Ly
@@ -21,6 +21,6 @@ rad = 2
 
 cell_list_instance = cell_list.CellList(x_vals, y_vals, Lx_val, Ly_val, cell_size_val)
 
-average_density = np.array(cell_list_instance.get_linear_density_array(1000, rad, 0.56123102415))
+average_density = cell_list_instance.get_density_array(10000000, rad, 0.56123102415)
 plt.hist(average_density, bins = 1000, density = True)
 print(dip(average_density))
