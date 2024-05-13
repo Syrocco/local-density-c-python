@@ -11,7 +11,7 @@ namespace py = pybind11;
 
 class CellList {
 private:
-    std::vector<double> x, y;
+    std::vector<double> x, y, r;
     double Lx, Ly, cell_size;
     std::vector<std::vector<int>> cells;
     int nx, ny;
@@ -57,11 +57,12 @@ public:
         return a;
     }
 
-    CellList(std::vector<double> x_vals, std::vector<double> y_vals, double Lx_val, double Ly_val, double cell_size_val) {
+    CellList(std::vector<double> x_vals, std::vector<double> y_vals, std::vector<double> r_vals, double Lx_val, double Ly_val, double cell_size_val) {
         x = x_vals;
         y = y_vals;
         Lx = Lx_val;
         Ly = Ly_val;
+        r = r_vals;
         cell_size = cell_size_val;
         nx = static_cast<int>(Lx / cell_size);
         ny = static_cast<int>(Ly / cell_size);
@@ -112,6 +113,45 @@ public:
         }
         return c / (M_PI * pow(rad, 2))*M_PI*pow(radius, 2) ;
     }
+
+
+    double get_rad_density(double x_val, double y_val, double rad) {
+        
+        auto f = [rad](double X, double radius) {
+            double mini = pow(rad - radius, 2);
+            double maxi = pow(rad + radius, 2);
+            if (X < mini)
+                return M_PI*radius*radius;
+            else if (X > maxi)
+                return 0.0;
+            else{
+                double xx = sqrt(X);
+                double angle1 = acos((radius*radius + X - rad*rad)/(2*radius*xx));
+                double angle2 = acos((rad*rad + X - radius*radius)/(2*rad*xx));
+                double area1 = radius*radius*angle1 - radius*radius*sin(2*angle1)/2;
+                double area2 = rad*rad*angle2 - rad*rad*sin(2*angle2)/2;
+                return area1 + area2;
+                
+            }
+        };
+
+        int numCell = static_cast<int>(rad / cell_size) + 2;
+        int cell_x_i = toCellX(x_val);
+        int cell_y_i = toCellY(y_val);
+        double c = 0.0;
+        for (int i = -numCell; i < numCell; ++i) {
+            for (int j = -numCell; j < numCell; ++j) {
+                auto particles_in_cell = get_particles_in_cell(pbcCellX(cell_x_i + i), pbcCellY(cell_y_i + j));
+                for (auto k : particles_in_cell) {
+                    double distance_squared = pow(pbcX(x_val - x[k]), 2) + pow(pbcY(y_val - y[k]), 2);
+               
+                    c += f(distance_squared, r[k]);
+                }
+            }
+        }
+        return c / (M_PI * pow(rad, 2)) ;
+    }
+
     double get_linear_density(double x_val, double y_val, double rad, double radius = 0.56123102415) {
         double mini = pow(rad - radius, 2);
         double maxi = pow(rad + radius, 2);
@@ -141,7 +181,7 @@ public:
         return c / (M_PI * pow(rad, 2))*M_PI*pow(radius, 2) ;
     }
 
-    double get_average_density(int N, double rad,  double radius = 0.56123102415){
+    double get_average_density(int N, double rad, double radius = 0.56123102415){
         std::random_device r;
         std::vector<std::default_random_engine> generators;
         for (int i = 0, N = omp_get_max_threads(); i < N; ++i) {
@@ -184,6 +224,27 @@ public:
         return list;
     }
 
+    std::vector<double> get_rad_density_list(int N, double rad){
+        std::random_device r;
+        std::vector<std::default_random_engine> generators;
+        for (int i = 0, N = omp_get_max_threads(); i < N; ++i) {
+            generators.emplace_back(std::default_random_engine(r()));
+        }
+        std::uniform_real_distribution<float> distributionX(0.0, Lx);
+        std::uniform_real_distribution<float> distributionY(0.0, Ly);
+
+        std::vector<double> list(N);
+        #pragma omp parallel for
+        for (int i = 0; i < N; i++){
+            std::default_random_engine& engine = generators[omp_get_thread_num()];
+            
+            double x_rand = distributionX(engine);
+            double y_rand = distributionY(engine);
+            list[i] = get_rad_density(x_rand, y_rand, rad);
+        }
+        return list;
+    }
+
     std::vector<double> get_linear_density_list(int N, double rad,  double radius = 0.56123102415){
         std::random_device r;
         std::vector<std::default_random_engine> generators;
@@ -220,6 +281,15 @@ public:
         std::copy(result.begin(), result.end(), ptr);
         return arr;
     }
+
+    py::array_t<double> get_rad_density_array(int N, double rad) {
+        auto result = get_rad_density_list(N, rad);
+        py::array_t<double> arr(result.size());
+        auto buffer = arr.request();
+        double *ptr = static_cast<double *>(buffer.ptr);
+        std::copy(result.begin(), result.end(), ptr);
+        return arr;
+    }
 };
 
 
@@ -227,9 +297,10 @@ public:
 
 PYBIND11_MODULE(cell_list, m) {
     py::class_<CellList>(m, "CellList")
-        .def(py::init<std::vector<double>, std::vector<double>, double, double, double>())
+        .def(py::init<std::vector<double>, std::vector<double>, std::vector<double>, double, double, double>())
         .def("get_density", &CellList::get_density)
         .def("get_average_density", &CellList::get_average_density)
         .def("get_linear_density_array", &CellList::get_linear_density_array)
-        .def("get_density_array", &CellList::get_density_array);
+        .def("get_density_array", &CellList::get_density_array)
+        .def("get_rad_density_array", &CellList::get_rad_density_array);
 }
