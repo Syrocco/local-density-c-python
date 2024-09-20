@@ -1,8 +1,6 @@
 import cell_list
-import random
 from functions2 import Data
 import matplotlib.pyplot as plt
-from diptest import dip
 import numpy as np
 from scipy.signal import savgol_filter
 
@@ -28,12 +26,13 @@ def findMax(averageDensity, bins = 1000, plot = False):
     return liquid, solid
     
     
-data = Data("/home/syrocco/Documents/lammps-active/build/N_10000phi_0.55vo_200T_0m_0.3.dumpM")
+data = Data("N_20000dtnoise_1.000res_1.000gamma_0.010T_1.000phi_0.600000rat_0.500vo_4.000ao_50.000delta_0.022Lx_323.604Ly_323.604q_0.000v_1.dump")
 
 Lx_val = data.Lx
 Ly_val = data.Ly
 dump = data.dump
 dump.jump_to_frame(dump.nframes - 1)
+
 x_vals = dump.get_atompropf("x")
 y_vals = dump.get_atompropf("y")
 r_vals = dump.get_atompropf("radius")
@@ -46,3 +45,5 @@ cell_list_instance = cell_list.CellList(x_vals, y_vals, r_vals, Lx_val, Ly_val, 
 
 average_density = cell_list_instance.get_rad_density_array(1001000, rad)
 findMax(average_density, plot = True)
+plt.xlabel(r"$\phi$")
+plt.ylabel(r"$proba$")
