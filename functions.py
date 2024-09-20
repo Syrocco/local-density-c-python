@@ -1,13 +1,9 @@
-from parserL import Dump
+from parser import Dump
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import matplotlib
 from matplotlib.patches import Circle
-import os
-from scipy.ndimage import gaussian_filter
-from scipy.signal import savgol_filter
-from scipy.optimize import curve_fit
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
 matplotlib.rcParams.update({'font.size': 18})

@@ -1,5 +1,5 @@
 import cell_list
-from functions2 import Data
+from functions import Data
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import savgol_filter
